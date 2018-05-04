@@ -1,31 +1,52 @@
+/*
+Gabriel Pereira Pinheiro
+Ismael 
+*/
+
 #include <stdio.h>
+#include <string.h>
+#include <stdlib.h>
 
-int processArguments (int value)
+typedef struct Argument
 {
-	int condition = 1;
+	char time[5];
+	int copies;
+	int priority;
+	char name[15];
+}argument;
 
-	if(value!=4)
+argument processArguments (int value, char * arguments[])
+{
+	argument args ;
+	strcpy(args.time,arguments[1]);
+	args.copies = atoi (arguments[2]);	
+	if(value==4)
 	{
-		condition = 0;
-	}	
-	return condition;
+		strcpy(args.name,arguments[3]);				
+	}
+	else
+	{
+		args.priority = atoi (arguments[3]);
+		strcpy(args.name,arguments[4]);
+	}
+	printf("Nome %s\n\n",args.name);
+
+	printf("tempo %s\n\n",args.time);
+
+	printf("priorirdade %d\n\n",args.priority);
+	
+	printf("copias %d\n\n",args.copies);	
 }
 
-
 int main( int argc, char *argv[ ] )
-{
-	
-	int cont;
-	
-	int valideArguments = processArguments(argc);
-
-	if(valideArguments==0)
+{	
+	if(argc!=4 && argc!=5)
 	{
 		printf("\nMissing arguments\n");
 		return 0;
-	}	
-    
-	for(cont=0; cont < argc; cont++)
-        printf("%d Parametro: %s\n", cont,argv[cont]);
-    return 0;
+	}
+	
+	processArguments(argc,argv);
+	  
+	return 0;
 }
