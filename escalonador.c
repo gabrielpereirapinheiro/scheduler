@@ -2,10 +2,7 @@
 #include <string.h>
 #include <stdlib.h>
 
-
-
 #define quantityOfProcess 10
-
 
 typedef struct Process
 {
@@ -15,14 +12,9 @@ typedef struct Process
 	char name[15];
 }process;
 
-
-
 int main(int argc, char *argv[ ])
 {
 	process processReady[quantityOfProcess];
 	process processWainting[quantityOfProcess];
-
-
-
 	return 0;
 }
