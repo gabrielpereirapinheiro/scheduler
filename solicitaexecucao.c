@@ -1,7 +1,7 @@
 /*
-Gabriel Pereira Pinheiro
-Ismael Cordeiro
-University of Brasilia - 2018
+	Gabriel Pereira Pinheiro - gabriel.pereira.pinheiro@gmail.com
+	Ismael Cordeiro - ismael@gmail.com
+	University of Brasilia - 2018
 */
 
 #include <stdio.h>
