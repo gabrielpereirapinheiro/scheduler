@@ -1,80 +1,128 @@
-/*
-	Gabriel Pereira Pinheiro - gabriel.pereira.pinheiro@gmail.com
-	Ismael Cordeiro - ismael@gmail.com
-	University of Brasilia - 2018
-*/
+/**
+ *	Gabriel Pereira Pinheiro - gabriel.pereira.pinheiro@gmail.com
+ *	Ismael Coelho Medeiros - 140083162@aluno.unb.br
+ *	University of Brasilia - 2018
+ */
 
 #include <stdio.h>
 #include <string.h>
 #include <stdlib.h>
 
-typedef struct Argument
+struct time
 {
-	char time[5];
+	int hours;
+	int minutes;
+};
+typedef struct time Time;
+
+struct process
+{
+	Time time;
 	int copies;
 	int priority;
-	char name[15];
-}argument;
+	char name[64];
+};
+typedef struct process Process;
 
-/*
-Function to analyse arguments from terminal
-*/
-argument processArguments (int value, char * arguments[])
+/**
+ * Function to process arguments received from terminal.
+ */
+int processArguments(int nArgs, char *args[], Process* process);
+
+int main(int argc, char *argv[])
 {
-	argument args ;
-	
-	//Define variable time 
-	strcpy(args.time,arguments[1]);
-	
-	//Check if copies its a number bigger than 0
-	if(atoi (arguments[2])<1)
-	{	
-		//If equals 0 or less, its a invalide number
-		printf("\nIlegal number of copies\nEnd of execution\n");
-		exit(0);
+	Process args;
+	if (processArguments(argc, argv, &args) == -1) {
+		printf("Something went wrong!! This program will be closed.\n");
+		return -1;
 	}
-	//Transform a string to int
-	args.copies = atoi (arguments[2]);	
 
-	if(value==4)
+	printf("The name is: %s\n\n", args.name);
+
+	printf("Time:  %.2d:%d\n\n", args.time.hours, args.time.minutes);
+
+	printf("Priority: %d\n\n", args.priority);
+
+	printf("Number of copies: %d\n\n", args.copies);
+
+	return 0;
+}
+
+int processArguments(int nArgs, char *args[], Process* process)
+{
+	if (nArgs != 4 && nArgs != 5)
 	{
-		//Copy string to another string
-		strcpy(args.name,arguments[3]);
-	
-		//Default priority
-		args.priority = 1;				
+		printf("ARGUMENT ERROR: Missing arguments\n");
+		return -1;
+	}
+
+	// Define 1st argument: time
+	char timeStrLength = strlen(args[1]);
+	if (timeStrLength != 4 && timeStrLength != 5)
+	{
+		printf("ARGUMENT ERROR: Failed while parsing time string\n");
+		return -1;
+	}
+	// Treat time string in the following format:
+	// - h:MM
+	// - hh:MM
+	if (timeStrLength != 5)
+	{
+		char hoursStr[2];
+		hoursStr[0] = args[1][0];
+		hoursStr[1] = '\0';
+		process->time.hours = atoi(hoursStr);
+		char minutesStr[3];
+		strncpy(minutesStr, &args[1][2], 2);
+		minutesStr[2] = '\0';
+		process->time.minutes = atoi(minutesStr);
 	}
 	else
 	{
-		args.priority = atoi (arguments[3]);
-		strcpy(args.name,arguments[4]);
-
-		if(args.priority<1 || args.priority>3)
-		{
-			printf("\nIlegal priority\nEnd of execution\n");
-			exit(0);
-		}
+		char hoursStr[3];
+		strncpy(hoursStr, args[1], 2);
+		hoursStr[2] = '\0';
+		process->time.hours = atoi(hoursStr);
+		char minutesStr[3];
+		strncpy(minutesStr, &args[1][3], 2);
+		minutesStr[2] = '\0';
+		process->time.minutes = atoi(minutesStr);
 	}
-	return args;
-}
 
-int main(int argc, char *argv[ ])
-{	
-	if(argc!=4 && argc!=5)
+	// Check if "copies" argument is bigger than zero.
+	int copies = atoi(args[2]);
+	if (copies < 1)
 	{
-		printf("\nMissing arguments\n");
-		return 0;
+		printf("ARGUMENT ERROR: Ilegal number of copies\n");
+		return -1;
 	}
-	
-	argument args = processArguments(argc,argv);
-	  
-	printf("The name is: %s\n\n",args.name);
-	
-	printf("Time:  %s\n\n",args.time);
+	process->copies = copies;
 
-	printf("Priority: %d\n\n",args.priority);
-	
-	printf("Number of copies: %d\n\n",args.copies);	
+	// Verify if priority was provided (nArgs = 5). If not,
+	// set a default value.
+	if (nArgs == 4)
+	{
+		// Copy string to another string. The maximum size of this
+		// parameter is 63 characters.
+		strncpy(process->name, args[3], 63);
+
+		// Default priority.
+		process->priority = 1;
+	}
+	else
+	{
+		// Store infomed priority.
+		process->priority = atoi(args[3]);
+		if (process->priority < 1 || process->priority > 3)
+		{
+			printf("ARGUMENT ERROR: Ilegal priority\n");
+			return -1;
+		}
+
+		// Copy string to another string. The maximum size of this
+		// parameter is 63 characters.
+		strncpy(process->name, args[4], 63);
+	}
 
 	return 0;
 }
