@@ -1,4 +1,4 @@
-/**
+ /**
  *	Gabriel Pereira Pinheiro - gabriel.pereira.pinheiro@gmail.com
  *	Ismael Coelho Medeiros - 140083162@aluno.unb.br
  *	University of Brasilia - 2018
@@ -7,6 +7,10 @@
 #include <stdio.h>
 #include <string.h>
 #include <stdlib.h>
+#include <sys/types.h>
+#include <sys/ipc.h>
+#include <sys/msg.h>
+#include <unistd.h>
 
 struct time
 {
@@ -15,40 +19,57 @@ struct time
 };
 typedef struct time Time;
 
-struct process
+struct job
 {
+	int id;
 	Time time;
 	int copies;
 	int priority;
 	char name[64];
 };
-typedef struct process Process;
+typedef struct job Job;
+
+struct message
+{
+	long pid;
+	Job job;
+};
+typedef struct message Message;
 
 /**
  * Function to process arguments received from terminal.
  */
-int processArguments(int nArgs, char *args[], Process* process);
+int processArguments(int nArgs, char *args[], Job* job);
 
 int main(int argc, char *argv[])
 {
-	Process args;
-	if (processArguments(argc, argv, &args) == -1) {
+	Job job;
+	if (processArguments(argc, argv, &job) == -1) {
 		printf("Something went wrong!! This program will be closed.\n");
-		return -1;
+		exit(1);
 	}
 
-	printf("The name is: %s\n\n", args.name);
+	int mqid;		// Message queue ID
+	if ((mqid = msgget(0x1223, IPC_CREAT|0x1B6)) < 0) {
+		printf("Error on message queue creation!! This program will be closed.\n");
+		exit(1);
+	}
 
-	printf("Time:  %.2d:%d\n\n", args.time.hours, args.time.minutes);
+	Message message;
+	message.pid = getpid();
+	message.job = job;
+	if ((msgsnd(mqid, &message, sizeof(message) - sizeof(long), 0)) < 0) {
+		printf("Error na hora enviar a msg\n");
+	}
 
-	printf("Priority: %d\n\n", args.priority);
-
-	printf("Number of copies: %d\n\n", args.copies);
-
-	return 0;
+	printf("The name is: %s\n", job.name);
+	printf("Time:  %.2d:%.2d\n", job.time.hours, job.time.minutes);
+	printf("Priority: %d\n", job.priority);
+	printf("Number of copies: %d\n", job.copies);
+	exit(0);
 }
 
-int processArguments(int nArgs, char *args[], Process* process)
+int processArguments(int nArgs, char *args[], Job* job)
 {
 	if (nArgs != 4 && nArgs != 5)
 	{
@@ -71,22 +92,22 @@ int processArguments(int nArgs, char *args[], Process* process)
 		char hoursStr[2];
 		hoursStr[0] = args[1][0];
 		hoursStr[1] = '\0';
-		process->time.hours = atoi(hoursStr);
+		job->time.hours = atoi(hoursStr);
 		char minutesStr[3];
 		strncpy(minutesStr, &args[1][2], 2);
 		minutesStr[2] = '\0';
-		process->time.minutes = atoi(minutesStr);
+		job->time.minutes = atoi(minutesStr);
 	}
 	else
 	{
 		char hoursStr[3];
 		strncpy(hoursStr, args[1], 2);
 		hoursStr[2] = '\0';
-		process->time.hours = atoi(hoursStr);
+		job->time.hours = atoi(hoursStr);
 		char minutesStr[3];
 		strncpy(minutesStr, &args[1][3], 2);
 		minutesStr[2] = '\0';
-		process->time.minutes = atoi(minutesStr);
+		job->time.minutes = atoi(minutesStr);
 	}
 
 	// Check if "copies" argument is bigger than zero.
@@ -96,7 +117,7 @@ int processArguments(int nArgs, char *args[], Process* process)
 		printf("ARGUMENT ERROR: Ilegal number of copies\n");
 		return -1;
 	}
-	process->copies = copies;
+	job->copies = copies;
 
 	// Verify if priority was provided (nArgs = 5). If not,
 	// set a default value.
@@ -104,16 +125,16 @@ int processArguments(int nArgs, char *args[], Process* process)
 	{
 		// Copy string to another string. The maximum size of this
 		// parameter is 63 characters.
-		strncpy(process->name, args[3], 63);
+		strncpy(job->name, args[3], 63);
 
 		// Default priority.
-		process->priority = 1;
+		job->priority = 1;
 	}
 	else
 	{
 		// Store infomed priority.
-		process->priority = atoi(args[3]);
-		if (process->priority < 1 || process->priority > 3)
+		job->priority = atoi(args[3]);
+		if (job->priority < 1 || job->priority > 3)
 		{
 			printf("ARGUMENT ERROR: Ilegal priority\n");
 			return -1;
@@ -121,7 +142,7 @@ int processArguments(int nArgs, char *args[], Process* process)
 
 		// Copy string to another string. The maximum size of this
 		// parameter is 63 characters.
-		strncpy(process->name, args[4], 63);
+		strncpy(job->name, args[4], 63);
 	}
 
 	return 0;
