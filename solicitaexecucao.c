@@ -97,6 +97,7 @@ int processArguments(int nArgs, char *args[], Job* job)
 		strncpy(minutesStr, &args[1][2], 2);
 		minutesStr[2] = '\0';
 		job->time.minutes = atoi(minutesStr);
+		//int quantityOfSeconds = (job->time.minutes *60) + (job->time.hours * 60*60);
 	}
 	else
 	{
@@ -108,6 +109,7 @@ int processArguments(int nArgs, char *args[], Job* job)
 		strncpy(minutesStr, &args[1][3], 2);
 		minutesStr[2] = '\0';
 		job->time.minutes = atoi(minutesStr);
+	    //int quantityOfSeconds = (job->time.minutes *60) + (job->time.hours * 60*60);
 	}
 
 	// Check if "copies" argument is bigger than zero.
