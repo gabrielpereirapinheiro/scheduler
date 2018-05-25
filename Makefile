@@ -1,11 +1,11 @@
-GCC = @gcc -Wall -g
+GCC = @g++ -std=c++11 -Wall -g
 RM = @rm -rf
 
 all:
 	@echo "Compila solicitaexecucao"
-	$(GCC) solicitaexecucao.c -o solicitaexecucao
+	$(GCC) solicitaexecucao.cpp -o solicitaexecucao
 	@echo "Compila escalonador"
-	$(GCC) escalonador.c -o escalonador
+	$(GCC) escalonador.cpp -o escalonador
 
 clean:
 	$(RM) solicitaexecucao

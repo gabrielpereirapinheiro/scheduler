@@ -4,25 +4,23 @@
  *	University of Brasilia - 2018
  */
 
+#include <iostream>
 #include <stdio.h>
 #include <string.h>
 #include <stdlib.h>
 #include <sys/types.h>
 #include <sys/ipc.h>
 #include <sys/msg.h>
+#include <sys/shm.h>
 #include <unistd.h>
 
-struct time
-{
-	int hours;
-	int minutes;
-};
-typedef struct time Time;
+using std::cout;
+using std::endl;
 
 struct job
 {
 	int id;
-	Time time;
+	int delay;
 	int copies;
 	int priority;
 	char name[64];
@@ -49,21 +47,38 @@ int main(int argc, char *argv[])
 		exit(1);
 	}
 
+	int idshm;	
+	if ((idshm = shmget(0x1223, sizeof(int), IPC_CREAT|0x1FF)) < 0) {
+		printf("Error while creating the shared memory!! This program will be closed.\n");
+		exit(1);
+	}
+	int *pshm;
+	if ((pshm = (int*) shmat(idshm, (char*)0, 0)) == (int*)-1) {
+		printf("Error while atraching to memory!! This program will be closed.\n ");
+		exit(1);
+	}
+	*pshm += 1;
+	job.id = *pshm;
+	shmdt((char*)0);
+
 	int mqid;		// Message queue ID
-	if ((mqid = msgget(0x1223, IPC_CREAT|0x1B6)) < 0) {
+	if ((mqid = msgget(0x1225, IPC_CREAT|0x1B6)) < 0) {
 		printf("Error on message queue creation!! This program will be closed.\n");
 		exit(1);
 	}
+	cout << "ID >> " << mqid << endl;
 
 	Message message;
 	message.pid = getpid();
 	message.job = job;
 	if ((msgsnd(mqid, &message, sizeof(message) - sizeof(long), 0)) < 0) {
 		printf("Error na hora enviar a msg\n");
+		exit(1);
 	}
-
+	
+	printf("The ID is: %d\n", job.id);
 	printf("The name is: %s\n", job.name);
-	printf("Time:  %.2d:%.2d\n", job.time.hours, job.time.minutes);
+	printf("Delay:  %ds\n", job.delay);
 	printf("Priority: %d\n", job.priority);
 	printf("Number of copies: %d\n", job.copies);
 	exit(0);
@@ -92,24 +107,20 @@ int processArguments(int nArgs, char *args[], Job* job)
 		char hoursStr[2];
 		hoursStr[0] = args[1][0];
 		hoursStr[1] = '\0';
-		job->time.hours = atoi(hoursStr);
 		char minutesStr[3];
 		strncpy(minutesStr, &args[1][2], 2);
 		minutesStr[2] = '\0';
-		job->time.minutes = atoi(minutesStr);
-		//int quantityOfSeconds = (job->time.minutes *60) + (job->time.hours * 60*60);
+		job->delay = atoi(minutesStr) * 60 + atoi(hoursStr) * 3600;
 	}
 	else
 	{
 		char hoursStr[3];
 		strncpy(hoursStr, args[1], 2);
 		hoursStr[2] = '\0';
-		job->time.hours = atoi(hoursStr);
 		char minutesStr[3];
 		strncpy(minutesStr, &args[1][3], 2);
 		minutesStr[2] = '\0';
-		job->time.minutes = atoi(minutesStr);
-	    //int quantityOfSeconds = (job->time.minutes *60) + (job->time.hours * 60*60);
+		job->delay = atoi(minutesStr) * 60 + atoi(hoursStr) * 3600;
 	}
 
 	// Check if "copies" argument is bigger than zero.
