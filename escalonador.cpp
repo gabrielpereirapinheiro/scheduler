@@ -167,7 +167,7 @@ int main(int argc, char *argv[])
 			    {
 			        priorityOne.push_back(execute);
 			    }
-			    if else(level==2)
+			    else if(level==2)
 			    {
 			        priorityTwo.push_back(execute);
 			    }
