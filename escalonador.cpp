@@ -163,6 +163,8 @@ int main(int argc, char *argv[])
 			}
 		}
     }
+        //Escalonador parte que escuta
+
     else{
 		list<Job> queueDelayJobs;
 
@@ -212,6 +214,16 @@ int main(int argc, char *argv[])
 
 							// Pausar o processo logo depois dele ter sido criado.
 							kill(pidExec, SIGSTOP);
+                            readyJob jobToSave;
+                            jobToSave.pid = pidExec;
+                            jobToSave.job = job.id;
+                            jobToSave.counter = 0;
+
+                            //Definir que sempre desce primeiro
+                            if(job.priority==2){
+                                jobToSave.orientation = 0;
+                            }
+                			cout << "Send to queue job " << jobToSave.job<< endl;
 
 							// manda (PID, JID, Contador, Orientacao)
 						}
@@ -225,7 +237,6 @@ int main(int argc, char *argv[])
 			for (auto& job : queueDelayJobs) {
 		       //cout << "The ID is: " << job.id << " Delay "<<job.delay << endl;
 				job.delay--;
-
 			}
 		}
     }
