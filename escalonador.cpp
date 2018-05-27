@@ -37,6 +37,7 @@ struct readyJob
 	int pid;
 	int job;
 	int counter;
+	//1 to up and 0 to down
 	int orientation;
 };
 
@@ -70,30 +71,68 @@ int main(int argc, char *argv[])
 
 	cout << "Estou clonado!" << endl;
 
+    //Escalonador parte executa
     if (pid != 0)
     {
+        //Inicia as tres filas de prioridade
 		list<readyJob> priorityOne;
 
 		list<readyJob> priorityTwo;
 
 		list<readyJob> priorityThree;
 
-
 		cout << "estou no processo pai" << endl;
 		int i;
 		while (1) {
 			// Escolhe job a ser executado seguindo a prioridade
 
+            readyJob execute;
+
+            int level = -1;
+            //Ve lista 1
+            if(priorityOne.empty())
+            {
+                // se ela for vazia ja tenta olhar na lista dois
+
+                if(priorityTwo.empty()){
+                    if(priorityThree.empty()){
+                    }
+                    else{
+                        //Se nao pega o primeiro item da lista
+                        execute = priorityThree.front();
+                        level = 3;
+                        priorityTwo.pop_front();
+                    }
+                }
+                else{
+                    //Se nao pega o primeiro item da lista
+                    execute = priorityTwo.front();
+                    level = 2;
+                    priorityThree.pop_front();
+                }
+            }
+            else{
+                //Se nao pega o primeiro item da lista
+                execute =  priorityOne.front();
+                level = 1;
+                priorityOne.pop_front();
+            }
+
 			// Re-começa a execução do processo
 			//kill(SIGCONT, pid);
+            //kill(SIGCONT, execute.pid)
 
 			// Registra rotina de tratamento do para a morte do filho
 			signal(SIGCHLD, handleChildDeath);
 
 			i = 0;
+
+            //Para indicar que ela ja esta nessa priorirdade
+            execute.counter++;
+
 			while (i++ < 5) {
 				if (isDead) {
-					// Remove job da fila
+					// Remove job da fila  EU JA REMOVI QUANDO EU PEGO ELE PARA EXECUTAR
 					break;	
 				}
 				sleep(1);
@@ -101,12 +140,30 @@ int main(int argc, char *argv[])
 
 			// Para a execução do processo
 			//kill(SIGSTOP, pid);
+            //kill(SIGSTOP, execute.pid);
 
 			// Recalcula a prioridade
+			if(execute.counter==2){
+                if(level==1){
+                    execute.orientation=0;
+                    priorityTwo.push_back(execute);
+                }
+                if(level==2){
+                    if(execute.orientation==1){
+                        priorityOne.push_back(execute);
+                    }
+                    else{
+                        priorityThree.push_back(execute);
+                    }
+                }
+                if(level==3){
+                    execute.orientation=1;
+                    priorityTwo.push_back(execute);
+                }
+			}
 		}
     }
-    else
-    {
+    else{
 		list<Job> queueDelayJobs;
 
     	int mqid;		// Message queue ID
@@ -116,10 +173,10 @@ int main(int argc, char *argv[])
 		}
 		cout << "ID >> " << mqid << endl;
 
-        while(1)
-		{
+        while(1){
 			Message message;
-			if (msgrcv(mqid, &message, sizeof(message) - sizeof(long), 0, IPC_NOWAIT) != -1) {
+
+			if (msgrcv(mqid, &message, sizeof(message) - sizeof(long), 0, IPC_NOWAIT) > -1) {
 				
 				// Coloca na fila
 				queueDelayJobs.push_back(message.job);
@@ -132,24 +189,20 @@ int main(int argc, char *argv[])
 				cout << "Number of copies: " << job.copies << endl;
 			}
 
-			// Verifica os prontos na fila e cria copias processos e manda (PID, JID, Contador, Orientacao) para o processo EXEC.
+		    // Verifica os prontos na fila e cria copias processos e manda (PID, JID, Contador, Orientacao) para o processo EXEC.
 			// Começa a executar o processo e imediatamente ele parado com SIGSTOP.
 			for (auto job : queueDelayJobs) {
 				if (job.delay <= 0) {
 
-					for (int i = 0; i < job.copies; i++)
-					{
+					for (int i = 0; i < job.copies; i++){
 						pid_t pidExec;
-						if ((pidExec = fork()) < 0)
-						{
+						if ((pidExec = fork()) < 0){
 							printf("Error on creation of processes listen and exec");
 							exit(1);
 						}
 
 						if (pidExec == 0) {
-
-							if (execl(job.name, job.name, nullptr) < 0)
-							{
+							if (execl(job.name, job.name, nullptr) < 0){
 								cout << "Error on executing program" << endl;
 								exit(1);
 							}
@@ -170,7 +223,9 @@ int main(int argc, char *argv[])
 			
 			// Decrementa delay nos elementos da fila
 			for (auto& job : queueDelayJobs) {
+		       //cout << "The ID is: " << job.id << " Delay "<<job.delay << endl;
 				job.delay--;
+
 			}
 		}
     }

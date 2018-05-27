@@ -85,7 +85,7 @@ int main(int argc, char *argv[])
 		exit(1);
 	}
 
-    //Mostra informacoes do job
+    //Mors
 	printf("The ID is: %d\n", job.id);
 	printf("The name is: %s\n", job.name);
 	printf("Delay:  %ds\n", job.delay);
