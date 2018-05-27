@@ -161,18 +161,15 @@ int main(int argc, char *argv[])
                     priorityTwo.push_back(execute);
                 }
 			}
-			else
-			{
-			    if(level==1)
-			    {
+			//Coloca de volta na fila
+			else{
+			    if(level==1){
 			        priorityOne.push_back(execute);
 			    }
-			    else if(level==2)
-			    {
+			    else if(level==2){
 			        priorityTwo.push_back(execute);
 			    }
-			    else
-			    {
+			    else{
 			        priorityThree.push_back(execute);
 			    }
 			}
