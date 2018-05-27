@@ -11,6 +11,7 @@
 #include <stdlib.h>
 #include <sys/types.h>
 #include <sys/ipc.h>
+#include <sys/wait.h>
 #include <sys/msg.h>
 #include <csignal>
 #include <unistd.h>
@@ -30,18 +31,25 @@ struct job
 	int priority;
 	char name[64];
 };
-
+typedef struct job Job;
 
 struct readyJob
 {
 	int pid;
 	int job;
+	int priority;
 	int counter;
 	//1 to up and 0 to down
 	int orientation;
 };
+typedef struct readyJob ReadyJob;
 
-typedef struct job Job;
+struct readyMessage
+{
+	long mType;
+	ReadyJob job;
+};
+typedef struct readyMessage ReadyMessage;
 
 struct message
 {
@@ -50,7 +58,7 @@ struct message
 };
 typedef struct message Message;
 
-int isDead = 0;
+int isDead = false;
 
 void handleChildDeath(int status);
 
@@ -60,6 +68,8 @@ int main(int argc, char *argv[])
 	// Job processReadyPriorityTwo[quantityOfProcess];
 	// Job processReadyPriorityThree[quantityOfProcess];
 	//Job processWaiting[quantityOfProcess];
+
+	signal(SIGUSR1, handleChildDeath);
 
 	cout << "Vou ser clonado!" << endl;
     pid_t pid;
@@ -75,20 +85,37 @@ int main(int argc, char *argv[])
     if (pid != 0)
     {
         //Inicia as tres filas de prioridade
-		list<readyJob> priorityOne;
+		list<ReadyJob> priorityOne;
+		list<ReadyJob> priorityTwo;
+		list<ReadyJob> priorityThree;
 
-		list<readyJob> priorityTwo;
-
-		list<readyJob> priorityThree;
+		int mqid;		// Message queue ID
+		if ((mqid = msgget(0x1226, IPC_CREAT|0x1B6)) < 0) {
+			printf("Error on message queue creation!! This program will be closed.\n");
+			exit(1);
+		}
 
 		cout << "estou no processo pai" << endl;
 		int i;
 		while (1) {
+
+			ReadyMessage message;
+			if (msgrcv(mqid, &message, sizeof(message) - sizeof(long), 0, IPC_NOWAIT) > -1) {
+				cout << "recebeu mensagem" << endl;
+				if (message.job.priority == 1) {
+					priorityOne.push_back(message.job);
+				} else if (message.job.priority == 2) {
+					priorityTwo.push_back(message.job);
+				} else {
+					priorityThree.push_back(message.job);	
+				}
+			}
+
 			// Escolhe job a ser executado seguindo a prioridade
 
-            readyJob execute;
+            ReadyJob execute;
+			execute.pid = -1;
 
-            int level = -1;
             //Ve lista 1
             if(priorityOne.empty())
             {
@@ -100,79 +127,90 @@ int main(int argc, char *argv[])
                     else{
                         //Se nao pega o primeiro item da lista
                         execute = priorityThree.front();
-                        level = 3;
                         priorityThree.pop_front();
                     }
                 }
                 else{
                     //Se nao pega o primeiro item da lista
                     execute = priorityTwo.front();
-                    level = 2;
                     priorityTwo.pop_front();
                 }
             }
             else{
                 //Se nao pega o primeiro item da lista
-                execute =  priorityOne.front();
-                level = 1;
+                execute = priorityOne.front();
                 priorityOne.pop_front();
             }
 
-			// Re-começa a execução do processo
-			//kill(SIGCONT, pid);
-            //kill(SIGCONT, execute.pid)
+			if (execute.pid == -1) {
+				continue;
+			}
 
-			// Registra rotina de tratamento do para a morte do filho
-			signal(SIGCHLD, handleChildDeath);
+			// Re-começa a execução do processo
+			cout << "Counter: " << execute.counter << " | PID: " << execute.pid << " | JID: " << execute.job << " | P: " << execute.priority << " | O: " << execute.orientation << endl;
+            kill(execute.pid, SIGCONT);
 
 			i = 0;
 
-            //Para indicar que ela ja esta nessa priorirdade
-            execute.counter++;
-
+			int isFinished = 0;
 			while (i++ < 5) {
+
 				if (isDead) {
-					// Remove job da fila  EU JA REMOVI QUANDO EU PEGO ELE PARA EXECUTAR
-					break;	
+					// Processo acabou
+					isFinished = 1;
+					break;
 				}
 				sleep(1);
 			}
 
+			// if (isFinished == 1) {
+			// 	continue;
+			// }
+
 			// Para a execução do processo
-			//kill(SIGSTOP, pid);
-            //kill(SIGSTOP, execute.pid);
+            kill(execute.pid, SIGSTOP);
+
+            //Para indicar que ela ja esta nessa priorirdade
+            execute.counter++;
 
 			// Recalcula a prioridade
 			if(execute.counter==2){
-                if(level==1){
+				execute.counter = 0;
+                if(execute.priority==1){
                     execute.orientation=0;
+					execute.priority = 2;
                     priorityTwo.push_back(execute);
                 }
-                if(level==2){
+                if(execute.priority==2){
                     if(execute.orientation==1){
+						execute.priority = 1;
                         priorityOne.push_back(execute);
                     }
                     else{
+						execute.priority = 3;
                         priorityThree.push_back(execute);
                     }
                 }
-                if(level==3){
+                if(execute.priority==3){
                     execute.orientation=1;
+					execute.priority = 2;
                     priorityTwo.push_back(execute);
                 }
 			}
 			//Coloca de volta na fila
 			else{
-			    if(level==1){
+			    if(execute.priority==1){
 			        priorityOne.push_back(execute);
 			    }
-			    else if(level==2){
+			    else if(execute.priority==2){
 			        priorityTwo.push_back(execute);
 			    }
 			    else{
 			        priorityThree.push_back(execute);
 			    }
 			}
+
+			execute.pid = -1;
 		}
     }
         //Escalonador parte que escuta
@@ -185,7 +223,12 @@ int main(int argc, char *argv[])
 			printf("Error on message queue creation!! This program will be closed.\n");
 			exit(1);
 		}
-		cout << "ID >> " << mqid << endl;
+
+		int mqidReady;		// Message queue ID
+		if ((mqidReady = msgget(0x1226, IPC_CREAT|0x1B6)) < 0) {
+			printf("Error on message queue creation!! This program will be closed.\n");
+			exit(1);
+		}
 
         while(1){
 			Message message;
@@ -206,14 +249,16 @@ int main(int argc, char *argv[])
 		    // Verifica os prontos na fila e cria copias processos e manda (PID, JID, Contador, Orientacao) para o processo EXEC.
 			// Começa a executar o processo e imediatamente ele parado com SIGSTOP.
 
+			list<list<Job>::iterator> jobsToBeRemoved;
+			int mi = 0;
+			for (auto it = queueDelayJobs.begin(); it != queueDelayJobs.end(); it++) {
 
-            std::list<Job>::iterator it1;
-            it1 = queueDelayJobs.begin();
-
-			for (auto job : queueDelayJobs) {
-
+				Job job = *it;
 				if (job.delay <= 0) {
+					mi++;
 
+					jobsToBeRemoved.push_back(it);
+					int ppid = getpid();
 					for (int i = 0; i < job.copies; i++){
 						pid_t pidExec;
 						if ((pidExec = fork()) < 0){
@@ -226,6 +271,7 @@ int main(int argc, char *argv[])
 								cout << "Error on executing program" << endl;
 								exit(1);
 							}
+							kill(ppid, SIGUSR1);
 							exit(0);
 
 						} else {
@@ -233,23 +279,33 @@ int main(int argc, char *argv[])
 							// Pausar o processo logo depois dele ter sido criado.
 							kill(pidExec, SIGSTOP);
 
-							//Cria um readyJob para salvar na fila de prioridade correta
-                            readyJob jobToSave;
+							//Cria um ReadyJob para salvar na fila de prioridade correta
+                        	ReadyJob jobToSave;
                             jobToSave.pid = pidExec;
                             jobToSave.job = job.id;
+							jobToSave.priority = job.priority;
                             jobToSave.counter = 0;
 
                             //Definir que sempre desce primeiro
-                            if(job.priority==2){
+                            if(jobToSave.priority==2){
                                 jobToSave.orientation = 0;
                             }
-                			cout << "Send to queue job " << jobToSave.job<< endl;
 
-                            queueDelayJobs.erase(it1);
+							ReadyMessage message;
+							message.mType = getpid() + mi;
+							message.job = jobToSave;
+							if ((msgsnd(mqidReady, &message, sizeof(message) - sizeof(long), 0)) < 0) {
+								printf("Error na hora enviar a msg\n");
+								exit(1);
+							}
+                			cout << "Send to queue job " << jobToSave.job << endl;
 						}
 					}
 				}
-				advance(it1,1);
+			}
+
+			for (auto remove : jobsToBeRemoved) {
+				queueDelayJobs.erase(remove);
 			}
 
 			sleep(1);
@@ -265,6 +321,7 @@ int main(int argc, char *argv[])
 	return 0;
 }
 
-void handleChildDeath(int status) {
-	isDead = 1;
+void handleChildDeath(int status)
+{
+	isDead = true;
 }
