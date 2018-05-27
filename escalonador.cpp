@@ -193,7 +193,13 @@ int main(int argc, char *argv[])
 
 		    // Verifica os prontos na fila e cria copias processos e manda (PID, JID, Contador, Orientacao) para o processo EXEC.
 			// Começa a executar o processo e imediatamente ele parado com SIGSTOP.
+
+\
+            std::list<Job>::iterator it1;
+            it1 = queueDelayJobs.begin();
+
 			for (auto job : queueDelayJobs) {
+
 				if (job.delay <= 0) {
 
 					for (int i = 0; i < job.copies; i++){
@@ -214,6 +220,8 @@ int main(int argc, char *argv[])
 
 							// Pausar o processo logo depois dele ter sido criado.
 							kill(pidExec, SIGSTOP);
+
+							//Cria um readyJob para salvar na fila de prioridade correta
                             readyJob jobToSave;
                             jobToSave.pid = pidExec;
                             jobToSave.job = job.id;
@@ -225,17 +233,21 @@ int main(int argc, char *argv[])
                             }
                 			cout << "Send to queue job " << jobToSave.job<< endl;
 
-							// manda (PID, JID, Contador, Orientacao)
+                            queueDelayJobs.erase(it1);
+                            cout << "Send to queue job "<< endl;
+                            //REMOVER JOB AQUI DA queueDelayJobs
+							//manda (PID, JID, Contador, Orientacao) ja para a fila correta
 						}
 					}
 				}
+				advance(it1,1);
 			}
 
 			sleep(1);
 			
 			// Decrementa delay nos elementos da fila
 			for (auto& job : queueDelayJobs) {
-		       //cout << "The ID is: " << job.id << " Delay "<<job.delay << endl;
+		       cout << "The ID is: " << job.id << " Delay "<<job.delay << endl;
 				job.delay--;
 			}
 		}
