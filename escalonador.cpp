@@ -101,14 +101,14 @@ int main(int argc, char *argv[])
                         //Se nao pega o primeiro item da lista
                         execute = priorityThree.front();
                         level = 3;
-                        priorityTwo.pop_front();
+                        priorityThree.pop_front();
                     }
                 }
                 else{
                     //Se nao pega o primeiro item da lista
                     execute = priorityTwo.front();
                     level = 2;
-                    priorityThree.pop_front();
+                    priorityTwo.pop_front();
                 }
             }
             else{
@@ -161,6 +161,21 @@ int main(int argc, char *argv[])
                     priorityTwo.push_back(execute);
                 }
 			}
+			else
+			{
+			    if(level==1)
+			    {
+			        priorityOne.push_back(execute);
+			    }
+			    if else(level==2)
+			    {
+			        priorityTwo.push_back(execute);
+			    }
+			    else
+			    {
+			        priorityThree.push_back(execute);
+			    }
+			}
 		}
     }
         //Escalonador parte que escuta
@@ -194,7 +209,7 @@ int main(int argc, char *argv[])
 		    // Verifica os prontos na fila e cria copias processos e manda (PID, JID, Contador, Orientacao) para o processo EXEC.
 			// Começa a executar o processo e imediatamente ele parado com SIGSTOP.
 
-\
+
             std::list<Job>::iterator it1;
             it1 = queueDelayJobs.begin();
 
@@ -234,9 +249,6 @@ int main(int argc, char *argv[])
                 			cout << "Send to queue job " << jobToSave.job<< endl;
 
                             queueDelayJobs.erase(it1);
-                            cout << "Send to queue job "<< endl;
-                            //REMOVER JOB AQUI DA queueDelayJobs
-							//manda (PID, JID, Contador, Orientacao) ja para a fila correta
 						}
 					}
 				}
