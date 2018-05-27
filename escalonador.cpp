@@ -38,7 +38,7 @@ struct readyJob
 	int job;
 	int counter;
 	int orientation;
-}
+};
 
 typedef struct job Job;
 
@@ -58,8 +58,7 @@ int main(int argc, char *argv[])
 	// Job processReadyPriorityOne[quantityOfProcess];
 	// Job processReadyPriorityTwo[quantityOfProcess];
 	// Job processReadyPriorityThree[quantityOfProcess];
-	Job processWaiting[quantityOfProcess];
-	int vetorpids[quantityOfProcess];
+	//Job processWaiting[quantityOfProcess];
 
 	cout << "Vou ser clonado!" << endl;
     pid_t pid;
@@ -68,8 +67,6 @@ int main(int argc, char *argv[])
         printf("Error on creation of processes listen and exec");
         exit(1);
     }	
-
-
 
 	cout << "Estou clonado!" << endl;
 

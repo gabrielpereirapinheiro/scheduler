@@ -42,16 +42,20 @@ int processArguments(int nArgs, char *args[], Job* job);
 int main(int argc, char *argv[])
 {
 	Job job;
+
+	//Se a funcao retornar menos -1 significa que ha falha nos argumentos
 	if (processArguments(argc, argv, &job) == -1) {
 		printf("Something went wrong!! This program will be closed.\n");
 		exit(1);
 	}
 
+    //Criando memoria compartilhada
 	int idshm;	
 	if ((idshm = shmget(0x1223, sizeof(int), IPC_CREAT|0x1FF)) < 0) {
 		printf("Error while creating the shared memory!! This program will be closed.\n");
 		exit(1);
 	}
+
 	int *pshm;
 	if ((pshm = (int*) shmat(idshm, (char*)0, 0)) == (int*)-1) {
 		printf("Error while atraching to memory!! This program will be closed.\n ");
@@ -61,21 +65,27 @@ int main(int argc, char *argv[])
 	job.id = *pshm;
 	shmdt((char*)0);
 
+    //Troca de mensagem entre solicita e executa
 	int mqid;		// Message queue ID
 	if ((mqid = msgget(0x1225, IPC_CREAT|0x1B6)) < 0) {
 		printf("Error on message queue creation!! This program will be closed.\n");
 		exit(1);
 	}
+
+	//Exibe numero do ID do job
 	cout << "ID >> " << mqid << endl;
 
 	Message message;
 	message.pid = getpid();
 	message.job = job;
+
+	//Envia mensagem para o executa
 	if ((msgsnd(mqid, &message, sizeof(message) - sizeof(long), 0)) < 0) {
 		printf("Error na hora enviar a msg\n");
 		exit(1);
 	}
-	
+
+    //Mostra informacoes do job
 	printf("The ID is: %d\n", job.id);
 	printf("The name is: %s\n", job.name);
 	printf("Delay:  %ds\n", job.delay);
