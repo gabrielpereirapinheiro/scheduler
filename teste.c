@@ -4,6 +4,6 @@
 int main() {
     sleep(15);
     printf("Test!\n");
-    printf("Hello World!\n");
+    printf("Olá Mendo!\n");
     return 0;
 }
