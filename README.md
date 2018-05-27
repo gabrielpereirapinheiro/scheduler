@@ -1,10 +1,12 @@
 # Sheduler
 Project of operational systems (OS)
 
-## About
+### About
 This project is an implementation of a staggered process scheduling manager and was build and can be can be build using `make` or using `gcc` on both files:
 - escalonador.c
 - solicitaexecucao
+
+### Execute
 
 To execute, inside the path of project `scheduler` use the command in terminal :
 
