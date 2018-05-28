@@ -16,8 +16,6 @@
 #include <csignal>
 #include <unistd.h>
 
-#define quantityOfProcess 2
-
 using std::signal;
 using std::cout;
 using std::endl;
@@ -33,12 +31,17 @@ struct job
 };
 typedef struct job Job;
 
+//Estrutura dos processos que vao estar na fila das prioridades
 struct readyJob
 {
+    //Para controlar o SIGSTOP ou SIGCONT
 	int pid;
+	//Dado pelo escalonador
 	int job;
+	//Nome do arquivo executavel
 	char name[64];
 	int priority;
+	//Vezes naquela prioridade
 	int counter;
 	//1 to up and 0 to down
 	int orientation;
@@ -65,12 +68,7 @@ void handleChildDeath(int status);
 
 int main(int argc, char *argv[])
 {
-	// Job processReadyPriorityOne[quantityOfProcess];
-	// Job processReadyPriorityTwo[quantityOfProcess];
-	// Job processReadyPriorityThree[quantityOfProcess];
-	//Job processWaiting[quantityOfProcess];
-	
-	cout << "Vou ser clonado!" << endl;
+	cout << "Starting schudeler..." << endl;
     pid_t pid;
     if ((pid = fork()) < 0)
     {
@@ -78,7 +76,7 @@ int main(int argc, char *argv[])
         exit(1);
     }	
 
-	cout << "Estou clonado!" << endl;
+	cout << "Start sucessul" << endl;
 
     //Escalonador parte executa
     if (pid != 0)
@@ -89,6 +87,7 @@ int main(int argc, char *argv[])
 		list<ReadyJob> priorityThree;
 
 		int mqid;		// Message queue ID
+		//Cria fila de mensagem
 		if ((mqid = msgget(0x1226, IPC_CREAT|0x1B6)) < 0) {
 			printf("Error on message queue creation!! This program will be closed.\n");
 			exit(1);
@@ -98,6 +97,7 @@ int main(int argc, char *argv[])
 		while (1) {
 
 			ReadyMessage message;
+			//Recebe a mensagem do solicitaexecucao
 			if (msgrcv(mqid, &message, sizeof(message) - sizeof(long), 0, IPC_NOWAIT) > -1) {
 
 				pid_t pidExec;
@@ -105,7 +105,7 @@ int main(int argc, char *argv[])
 					printf("Error on creation of processes listen and exec");
 					exit(1);
 				}
-
+                //Apos receber a mensagem, inicia o processo o filho ira parar a execucao em seguida
 				if (pidExec == 0) {
 					if (execl(message.job.name, message.job.name, nullptr) < 0){
 						cout << "Error on executing program" << endl;
@@ -120,6 +120,7 @@ int main(int argc, char *argv[])
 					// Pausar o processo logo depois dele ter sido criado.
 					kill(pidExec, SIGSTOP);
 
+                    //Escolhe a fila de prioridade do processo
 					if (message.job.priority == 1) {
 						priorityOne.push_back(message.job);
 					} else if (message.job.priority == 2) {
@@ -149,6 +150,7 @@ int main(int argc, char *argv[])
 				priorityThree.pop_front();
 			}
 
+            //Se for -1, passa para a proxima iteracao
 			if (execute.pid == -1) {
 				continue;
 			}
@@ -156,9 +158,13 @@ int main(int argc, char *argv[])
 			// Re-começa a execução do processo
             kill(execute.pid, SIGCONT);
 
+            //Contar o tempo do QUANTUM
 			i = 0;
 
+            //Caso ele morra antes do QUANTUM sair do LOOP
 			bool isFinished = false;
+
+			//QUANTUM
 			while (i++ < 5) {
 
 				int status, pid = waitpid(execute.pid, &status, WNOHANG);
@@ -183,7 +189,8 @@ int main(int argc, char *argv[])
             //Para indicar que ela ja esta nessa priorirdade
             execute.counter++;
 
-			// Recalcula a prioridade
+			// Recalcula a prioridade, se ja tiver ficado duas vezes naquela prioridade vai ser recalculado senao
+			//Volta para a fila que estava
 			if(execute.counter==2){
 				execute.counter = 0;
                 if(execute.priority==1){
@@ -225,11 +232,12 @@ int main(int argc, char *argv[])
 		list<Job> queueDelayJobs;
 
     	int mqid;		// Message queue ID
+    	//Com o solicita execucao
 		if ((mqid = msgget(0x1225, IPC_CREAT|0x1B6)) < 0) {
 			printf("Error on message queue creation!! This program will be closed.\n");
 			exit(1);
 		}
-
+        //Com o executa
 		int mqidReady;		// Message queue ID
 		if ((mqidReady = msgget(0x1226, IPC_CREAT|0x1B6)) < 0) {
 			printf("Error on message queue creation!! This program will be closed.\n");
@@ -290,7 +298,7 @@ int main(int argc, char *argv[])
 					}
 				}
 			}
-
+            //Tira todos aqueles que ja chegaram a 0 no delay
 			for (auto remove : jobsToBeRemoved) {
 				queueDelayJobs.erase(remove);
 			}
