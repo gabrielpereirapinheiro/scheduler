@@ -32,3 +32,8 @@ Where:
 
 `NAME` is the name of executable file, this file needs to be inside the project folder.
 
+
+## License
+
+This project is licensed under the MIT License - see the [LICENSE.md](https://github.com/gabrielpereirapinheiro/scheduler/blob/master/LICENSE) file for details
+
