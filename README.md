@@ -2,7 +2,7 @@
 Project of operational systems (OS)
 
 ### About
-This project is an implementation of a staggered process scheduling manager and was build and can be can be build using `make` or using `gcc` on both files:
+This project is an implementation of a ***staggered process scheduling manager*** and was build and can be can be build using `make` or using `gcc` on both files:
 - escalonador.c
 - solicitaexecucao
 
@@ -18,14 +18,15 @@ And now, use the command :
 
 Now, you can open a new terminal, and use the commnad :
 
-> ./solicitaexecucao `hh:mm` `C` `P` `NAME`
+> ./solicitaexecucao `HH:MM` `C` `P` `NAME`
 
 Where:
 
-`hh:mm` it's the delay, example : 01:15, the program will wait for 1 hour and 35 minutes and after that will be executed.
+`HH:MM` it's the delay, example : 01:15, the program will wait for 1 hour and 35 minutes and after that will be executed. So the formart is the firts two digits represent hour and the last two minutes.
 
-`C` is an intenger number gratter thant 0 .
+`C` is an intenger number gratter thant 0 and represent the number of copies.
 
 `P` is an integer number, can be 1, 2 or 3.
 
 `NAME` is the name of executable file, this file needs to be inside the project folder.
+
