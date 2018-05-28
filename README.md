@@ -6,7 +6,8 @@ This project is an implementation of a ***staggered process scheduling manager**
 - escalonador.c
 - solicitaexecucao
 
-The programin langugage used was `C++` so is necessary have installed `G++` in you computer.
+The programming langugage used was `C++` so is necessary have the `g++` compiler installed in you computer. We've used C++11 on this project, so to compile each file, we use the flag `-std=c++11`.
+
 ### Execute
 
 To execute, inside the path of project `scheduler` use the command in terminal :
