@@ -77,7 +77,7 @@ int main(int argc, char *argv[])
     pid_t pid;
     if ((pid = fork()) < 0)
     {
-        printf("Error on creation of processes listen and exec");
+        cout << "Error on creation of processes listen and exec." >> endl;
         exit(1);
 	}
 
@@ -105,14 +105,14 @@ void exec()
 
 			pid_t pid;
 			if ((pid = fork()) < 0){
-				printf("Error on creation of processes listen and exec");
+				cout << "Error on creation of processes listen and exec." << endl;
 				exit(1);
 			}
 			if (pid == 0) {
 
 				// Execute job.
 				if (execl(message.job.name, message.job.name, nullptr) < 0){
-					cout << "Error on executing program" << endl;
+					cout << "Error on executing program." << endl;
 					exit(1);
 				}
 				exit(0);
@@ -171,7 +171,7 @@ void exec()
 
 			int status, pid = waitpid(execute.pid, &status, WNOHANG);
 			if (pid == -1) {
-				cout << "wait() error" << endl;
+				cout << "wait() error." << endl;
 			} else if (pid == 0) {
 				sleep(1);
 			} else {
@@ -231,19 +231,19 @@ void listen()
 
 	int mqidAsk;
 	if ((mqidAsk = msgget(MSGQ_ASK_KEY, IPC_CREAT|0x1B6)) < 0) {
-		printf("Error on message queue creation!! This program will be closed.\n");
+		cout << "Error on message queue creation!! This program will be closed." << endl;
 		exit(1);
 	}
 
 	int mqidRem;
 	if ((mqidRem = msgget(MSGQ_REM_KEY, IPC_CREAT|0x1B6)) < 0) {
-		printf("Error on message queue creation!! This program will be closed.\n");
+		cout << "Error on message queue creation!! This program will be closed." << endl;
 		exit(1);
 	}
 
 	int mqidReady;
 	if ((mqidReady = msgget(MSGQ_READY_KEY, IPC_CREAT|0x1B6)) < 0) {
-		printf("Error on message queue creation!! This program will be closed.\n");
+		cout << "Error on message queue creation!! This program will be closed." << endl;
 		exit(1);
 	}
 
