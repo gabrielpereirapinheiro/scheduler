@@ -1,4 +1,4 @@
- /**
+/**
  *	Gabriel Pereira Pinheiro - gabriel.pereira.pinheiro@gmail.com
  *	Ismael Coelho Medeiros - 140083162@aluno.unb.br
  *	University of Brasilia - 2018
@@ -17,6 +17,9 @@
 using std::cout;
 using std::endl;
 
+#define SHM_KEY      0x1223
+#define MSGQ_ASK_KEY 0x1224
+
 struct job
 {
 	int id;
@@ -27,87 +30,77 @@ struct job
 };
 typedef struct job Job;
 
-struct message
+struct askMessage
 {
 	long pid;
 	Job job;
 };
-typedef struct message Message;
+typedef struct askMessage AskMessage;
 
 /**
- * Function to process arguments received from terminal.
+ * Processes arguments received from terminal.
  */
-int processArguments(int nArgs, char *args[], Job* job);
+bool tryProcessArguments(int nArgs, char *args[], Job* job);
 
 int main(int argc, char *argv[])
 {
 	Job job;
-
-	//Se a funcao retornar menos -1 significa que ha falha nos argumentos
-	if (processArguments(argc, argv, &job) == -1) {
-		printf("Something went wrong!! This program will be closed.\n");
+	if (!tryProcessArguments(argc, argv, &job)) {
+		cout << "Something went wrong!! This program will be closed." << endl;
 		exit(1);
 	}
 
-    //Criando memoria compartilhada
+	// Using shared memory, increment job ID.
 	int idshm;	
-	if ((idshm = shmget(0x1223, sizeof(int), IPC_CREAT|0x1FF)) < 0) {
-		printf("Error while creating the shared memory!! This program will be closed.\n");
+	if ((idshm = shmget(SHM_KEY, sizeof(int), IPC_CREAT|0x1FF)) < 0) {
+		cout << "Error while creating the shared memory!! This program will be closed." << endl;
 		exit(1);
 	}
-
 	int *pshm;
 	if ((pshm = (int*) shmat(idshm, (char*)0, 0)) == (int*)-1) {
-		printf("Error while atraching to memory!! This program will be closed.\n ");
+		cout << "Error while atraching to memory!! This program will be closed." << endl;
 		exit(1);
 	}
 	*pshm += 1;
 	job.id = *pshm;
 	shmdt((char*)0);
 
-    //Troca de mensagem entre solicita e executa
-	int mqid;		// Message queue ID
-	if ((mqid = msgget(0x1225, IPC_CREAT|0x1B6)) < 0) {
-		printf("Error on message queue creation!! This program will be closed.\n");
+	int mqid;
+	if ((mqid = msgget(MSGQ_ASK_KEY, IPC_CREAT|0x1B6)) < 0) {
+		cout << "Error on message queue creation!! This program will be closed." << endl;
 		exit(1);
 	}
 
-	//Exibe numero do ID do job
-	cout << "ID >> " << mqid << endl;
-
-	Message message;
+	AskMessage message;
 	message.pid = getpid();
 	message.job = job;
-
-	//Envia mensagem para o executa
 	if ((msgsnd(mqid, &message, sizeof(message) - sizeof(long), 0)) < 0) {
-		printf("Error na hora enviar a msg\n");
+		cout << "Error while sending the message." << endl;
 		exit(1);
 	}
 
-    //Mors
-	printf("The ID is: %d\n", job.id);
-	printf("The name is: %s\n", job.name);
-	printf("Delay:  %ds\n", job.delay);
-	printf("Priority: %d\n", job.priority);
-	printf("Number of copies: %d\n", job.copies);
+	cout << "ID:        " << job.id << endl;
+	cout << "Name:      " << job.name << endl;
+	cout << "Delay:     " << job.delay << endl;
+	cout << "Priority:  " << job.priority << endl;
+	cout << "Copies:    " << job.copies << endl;
 	exit(0);
 }
 
-int processArguments(int nArgs, char *args[], Job* job)
+bool tryProcessArguments(int nArgs, char *args[], Job* job)
 {
 	if (nArgs != 4 && nArgs != 5)
 	{
-		printf("ARGUMENT ERROR: Missing arguments\n");
-		return -1;
+		cout << "ARGUMENT ERROR: Missing arguments." << endl;
+		return false;
 	}
 
 	// Define 1st argument: time
 	char timeStrLength = strlen(args[1]);
 	if (timeStrLength != 4 && timeStrLength != 5)
 	{
-		printf("ARGUMENT ERROR: Failed while parsing time string\n");
-		return -1;
+		cout << "ARGUMENT ERROR: Failed while parsing time string." << endl;
+		return false;
 	}
 	// Treat time string in the following format:
 	// - h:MM
@@ -137,8 +130,8 @@ int processArguments(int nArgs, char *args[], Job* job)
 	int copies = atoi(args[2]);
 	if (copies < 1)
 	{
-		printf("ARGUMENT ERROR: Ilegal number of copies\n");
-		return -1;
+		cout << "ARGUMENT ERROR: Ilegal number of copies." << endl;
+		return false;
 	}
 	job->copies = copies;
 
@@ -159,8 +152,8 @@ int processArguments(int nArgs, char *args[], Job* job)
 		job->priority = atoi(args[3]);
 		if (job->priority < 1 || job->priority > 3)
 		{
-			printf("ARGUMENT ERROR: Ilegal priority\n");
-			return -1;
+			cout << "ARGUMENT ERROR: Ilegal priority." << endl;
+			return false;
 		}
 
 		// Copy string to another string. The maximum size of this
@@ -168,5 +161,5 @@ int processArguments(int nArgs, char *args[], Job* job)
 		strncpy(job->name, args[4], 63);
 	}
 
-	return 0;
+	return true;
 }
