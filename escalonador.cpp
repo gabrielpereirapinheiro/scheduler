@@ -24,6 +24,7 @@ using std::list;
 #define MSGQ_ASK_KEY   0x1224
 #define MSGQ_REM_KEY   0x1225
 #define MSGQ_READY_KEY 0x1226
+#define MSGQ_LIST_KEY  0x1227
 #define QUANTUM		   5
 
 struct job
@@ -68,6 +69,14 @@ struct removeMessage
 };
 typedef struct removeMessage RemoveMessage;
 
+
+struct listProcess
+{
+    long mType;
+};
+typedef struct listProcess ListProcess;
+
+
 void exec();
 void listen();
 
@@ -77,7 +86,7 @@ int main(int argc, char *argv[])
     pid_t pid;
     if ((pid = fork()) < 0)
     {
-        cout << "Error on creation of processes listen and exec." >> endl;
+        cout << "Error on creation of processes listen and exec." << endl;
         exit(1);
 	}
 
@@ -247,6 +256,14 @@ void listen()
 		exit(1);
 	}
 
+	int mqidList;
+	if ((mqidList = msgget(MSGQ_LIST_KEY, IPC_CREAT|0x1B6)) < 0) {
+		cout << "Error on message queue creation!! This program will be closed." << endl;
+		exit(1);
+	}
+
+
+
 	while (true) {
 
 		AskMessage askMessage;
@@ -274,6 +291,24 @@ void listen()
 				}
 			}
 		}
+
+        ListProcess listProcess;
+		if (msgrcv(mqidList, &listProcess, sizeof(listProcess) - sizeof(long), 0, IPC_NOWAIT) > -1) {
+
+            if(queueDelayJobs.size()==0)
+            {
+            cout << "List empty\n" << endl;
+            }
+            else
+            {
+                cout << "Job      arq_exec      hhmm      copias      pri" << endl;
+                for (auto it = queueDelayJobs.begin(); it != queueDelayJobs.end(); it++) {
+                    cout << it->id<< "         " <<  it->name << "      " <<  it->delay<< "         "   << it->copies<< "            "   << it->priority  <<  endl;
+                }
+                cout << "-----End of list \n" << endl;
+            }
+		}
+
 
 		// Verifica os prontos na fila e cria copias processos e manda (PID, JID, Contador, Orientacao) para o processo EXEC.
 		// Começa a executar o processo e imediatamente ele parado com SIGSTOP.
