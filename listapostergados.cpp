@@ -96,7 +96,7 @@ int main(int argc, char *argv[])
 			auto now = time(nullptr);
 			auto local = localtime(&now);
 			int hours = local->tm_hour + resMessage.queueDelayJob.delay / 3600;
-			int minutes = local->tm_min + (resMessage.queueDelayJob.delay - 3600 * hours) / 60;
+			int minutes = local->tm_min + (resMessage.queueDelayJob.delay % 3600) / 60;
 
 			printf("%3d", resMessage.queueDelayJob.id);
 			printf("  %15s", resMessage.queueDelayJob.name);
