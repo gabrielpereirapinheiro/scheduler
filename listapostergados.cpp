@@ -83,7 +83,6 @@ int main(int argc, char *argv[])
 	int size = sizeMessage.size;
 	
 	// Show each delay job.
-	cout << size << endl;
 	if (size < 1) {
 		cout << endl << "List empty\n" << endl;
 	} else {
