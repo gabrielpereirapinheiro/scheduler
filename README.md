@@ -40,6 +40,13 @@ To execute the `remove_postergado`, use the ocmmand:
 $ ./remove_postergado <job_id>
 ```
 
+To execute the `lista_postergado`, use the ocmmand:
+```
+$ ./lista_postergado
+```
+
+
+
 ## License
 
 This project is licensed under the MIT License - see the [LICENSE.md](https://github.com/gabrielpereirapinheiro/scheduler/blob/master/LICENSE) file for details
