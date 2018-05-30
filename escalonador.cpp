@@ -6,6 +6,8 @@
 
 #include <iostream>
 #include <list>
+#include <string>
+#include <sstream>
 #include <stdio.h>
 #include <string.h>
 #include <stdlib.h>
@@ -18,13 +20,17 @@
 
 using std::signal;
 using std::cout;
+using std::stringstream;
 using std::endl;
+using std::string;
 using std::list;
 
 #define MSGQ_ASK_KEY   0x1224
 #define MSGQ_REM_KEY   0x1225
 #define MSGQ_READY_KEY 0x1226
-#define MSGQ_LIST_KEY  0x1227
+#define MSGQ_LIST_REQ_KEY 0x1227
+#define MSGQ_LIST_RES_KEY 0x1228
+#define MSGQ_LIST_SIZE_KEY 0x1229
 #define QUANTUM		   5
 
 struct job
@@ -69,12 +75,25 @@ struct removeMessage
 };
 typedef struct removeMessage RemoveMessage;
 
-
-struct listProcess
+struct listReqMessage
 {
     long mType;
 };
-typedef struct listProcess ListProcess;
+typedef struct listReqMessage ListReqMessage;
+
+struct listResMessage
+{
+	long pid;
+	Job queueDelayJob;
+};
+typedef struct listResMessage ListResMessage;
+
+struct listSizeMessage
+{
+	long pid;
+	int size;
+};
+typedef struct listSizeMessage ListSizeMessage;
 
 
 void exec();
@@ -82,7 +101,8 @@ void listen();
 
 int main(int argc, char *argv[])
 {
-	cout << "Starting schudeler..." << endl;
+	cout << "Starting scheduler..." << endl;
+
     pid_t pid;
     if ((pid = fork()) < 0)
     {
@@ -100,6 +120,7 @@ void exec()
 	list<ReadyJob> priorityOne;
 	list<ReadyJob> priorityTwo;
 	list<ReadyJob> priorityThree;
+	int status;
 
 	int mqid;
 	if ((mqid = msgget(MSGQ_READY_KEY, IPC_CREAT|0x1B6)) < 0) {
@@ -232,6 +253,9 @@ void exec()
 				priorityThree.push_back(execute);
 		}
 	}
+
+	// Wait for zoombies processes.
+	wait(&status);
 }
 
 void listen()
@@ -256,28 +280,30 @@ void listen()
 		exit(1);
 	}
 
-	int mqidList;
-	if ((mqidList = msgget(MSGQ_LIST_KEY, IPC_CREAT|0x1B6)) < 0) {
+	int mqidListReq;
+	if ((mqidListReq = msgget(MSGQ_LIST_REQ_KEY, IPC_CREAT|0x1B6)) < 0) {
 		cout << "Error on message queue creation!! This program will be closed." << endl;
 		exit(1);
 	}
 
+	int mqidListRes;
+	if ((mqidListRes = msgget(MSGQ_LIST_RES_KEY, IPC_CREAT|0x1B6)) < 0) {
+		cout << "Error on message queue creation!! This program will be closed." << endl;
+		exit(1);
+	}
 
+	int mqidListSize;
+	if ((mqidListSize = msgget(MSGQ_LIST_SIZE_KEY, IPC_CREAT|0x1B6)) < 0) {
+		cout << "Error on message queue creation!! This program will be closed." << endl;
+		exit(1);
+	}
 
 	while (true) {
 
 		AskMessage askMessage;
 		if (msgrcv(mqidAsk, &askMessage, sizeof(askMessage) - sizeof(long), 0, IPC_NOWAIT) > -1) {
-			
 			// Push to the queue.
 			queueDelayJobs.push_back(askMessage.job);
-
-			Job job = askMessage.job;
-			cout << "ID:        " << job.id << endl;
-			cout << "Name:      " << job.name << endl;
-			cout << "Delay:     " << job.delay << endl;
-			cout << "Priority:  " << job.priority << endl;
-			cout << "Copies:    " << job.copies << endl;
 		}
 
 		RemoveMessage remMessage;
@@ -292,21 +318,30 @@ void listen()
 			}
 		}
 
-        ListProcess listProcess;
-		if (msgrcv(mqidList, &listProcess, sizeof(listProcess) - sizeof(long), 0, IPC_NOWAIT) > -1) {
+        ListReqMessage listReqMessage;
+		if (msgrcv(mqidListReq, &listReqMessage, sizeof(listReqMessage) - sizeof(long), 0, IPC_NOWAIT) > -1) {
 
-            if(queueDelayJobs.size()==0)
-            {
-            cout << "List empty\n" << endl;
-            }
-            else
-            {
-                cout << "Job      arq_exec      hhmm      copias      pri" << endl;
-                for (auto it = queueDelayJobs.begin(); it != queueDelayJobs.end(); it++) {
-                    cout << it->id<< "         " <<  it->name << "      " <<  it->delay<< "         "   << it->copies<< "            "   << it->priority  <<  endl;
+			// Send first the size of the list.
+			ListSizeMessage listSizeMessage;
+			listSizeMessage.pid = getpid();
+			listSizeMessage.size = queueDelayJobs.size();
+			if ((msgsnd(mqidListSize, &listSizeMessage, sizeof(listSizeMessage) - sizeof(long), 0)) < 0) {
+				cout << "Error while sending the message." << endl;
+				exit(1);
+			}
+
+			// Send each element of the list.
+            if (queueDelayJobs.size() > 0) {
+				for (auto it = queueDelayJobs.begin(); it != queueDelayJobs.end(); it++) {
+					ListResMessage listResMessage;
+					listResMessage.pid = getpid();
+					listResMessage.queueDelayJob = *it;
+					if ((msgsnd(mqidListRes, &listResMessage, sizeof(listResMessage) - sizeof(long), 0)) < 0) {
+						cout << "Error while sending the message." << endl;
+						exit(1);
+					}
                 }
-                cout << "-----End of list \n" << endl;
-            }
+			}
 		}
 
 
@@ -360,5 +395,10 @@ void listen()
 		for (auto& job : queueDelayJobs) {
 			job.delay--;
 		}
+	}
+
+	// Remove all message queue.
+	if (msgctl(int msqid, IPC_RMID, struct msqid_ds *buf) == -1) {
+		
 	}
 }

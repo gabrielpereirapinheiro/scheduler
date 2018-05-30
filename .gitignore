@@ -1,6 +1,7 @@
 .idea/
 .vscode/
 solicita_execucao
+lista_postergados
 remove_postergado
 escalonador
 a.out

@@ -13,34 +13,92 @@
 using std::cout;
 using std::endl;
 
-#define MSGQ_REM_KEY 0x1227
+#define MSGQ_LIST_REQ_KEY 0x1227
+#define MSGQ_LIST_RES_KEY 0x1228
+#define MSGQ_LIST_SIZE_KEY 0x1229
 
+struct job
+{
+	int id;
+	int delay;
+	int copies;
+	int priority;
+	char name[64];
+};
+typedef struct job Job;
 
-struct listProcess
+struct listReqMessage
 {
     long pid;
 };
-typedef struct listProcess ListProcess;
+typedef struct listReqMessage ListReqMessage;
 
+struct listResMessage
+{
+	long mType;
+	Job queueDelayJob;
+};
+typedef struct listResMessage ListResMessage;
+
+struct listSizeMessage
+{
+	long mType;
+	int size;
+};
+typedef struct listSizeMessage ListSizeMessage;
 
 
 int main(int argc, char *argv[])
 {
-    int mqid;
-	if ((mqid = msgget(MSGQ_REM_KEY, IPC_CREAT|0x1B6)) < 0) {
+    int mqidListReq;
+	if ((mqidListReq = msgget(MSGQ_LIST_REQ_KEY, IPC_CREAT|0x1B6)) < 0) {
 		cout << "Error on message queue creation!! This program will be closed." << endl;
 		exit(1);
 	}
 
-    ListProcess message;
-    message.pid = getpid();
+	int mqidListRes;
+	if ((mqidListRes = msgget(MSGQ_LIST_RES_KEY, IPC_CREAT|0x1B6)) < 0) {
+		cout << "Error on message queue creation!! This program will be closed." << endl;
+		exit(1);
+	}
 
-	if ((msgsnd(mqid, &message, sizeof(message) - sizeof(long), 0)) < 0) {
+	int mqidListSize;
+	if ((mqidListSize = msgget(MSGQ_LIST_SIZE_KEY, IPC_CREAT|0x1B6)) < 0) {
+		cout << "Error on message queue creation!! This program will be closed." << endl;
+		exit(1);
+	}
+
+	// Send request.
+    ListReqMessage reqMessage;
+    reqMessage.pid = getpid();
+	if ((msgsnd(mqidListReq, &reqMessage, sizeof(reqMessage) - sizeof(long), 0)) < 0) {
 		cout << "Error while sending the message." << endl;
 		exit(1);
 	}
 
-    cout << "All process was listed" << endl;
+	// Wait for size response.
+	ListSizeMessage sizeMessage;
+	msgrcv(mqidListSize, &sizeMessage, sizeof(sizeMessage) - sizeof(long), 0, 0);
+	int size = sizeMessage.size;
+	
+	// Show each delay job.
+	if (size < 1) {
+		cout << endl << "List empty\n" << endl;
+	} else {
+		cout << endl << "Job         arq_exec  hhmm  copias  pri" << endl;
+		cout << "---------------------------------------" << endl;
+		while (size-- > 0) {
+			ListResMessage resMessage;
+			msgrcv(mqidListRes, &resMessage, sizeof(resMessage) - sizeof(long), 0, 0);
+			printf("%3d", resMessage.queueDelayJob.id);
+			printf("  %15s", resMessage.queueDelayJob.name);
+			printf("  %4d", resMessage.queueDelayJob.delay);
+			printf("  %6d", resMessage.queueDelayJob.copies);
+			printf("  %3d", resMessage.queueDelayJob.priority);
+			cout << endl;
+		}
+		cout << "---------------------------------------" << endl << endl;
+	}
 
     exit(0);
 }
