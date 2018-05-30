@@ -25,13 +25,13 @@ using std::endl;
 using std::string;
 using std::list;
 
-#define MSGQ_ASK_KEY   0x1224
-#define MSGQ_REM_KEY   0x1225
-#define MSGQ_READY_KEY 0x1226
-#define MSGQ_LIST_REQ_KEY 0x1227
-#define MSGQ_LIST_RES_KEY 0x1228
-#define MSGQ_LIST_SIZE_KEY 0x1229
-#define QUANTUM		   5
+#define MSGQ_ASK_KEY       0x1223
+#define MSGQ_REM_KEY       0x1224
+#define MSGQ_READY_KEY     0x1225
+#define MSGQ_LIST_REQ_KEY  0x1226
+#define MSGQ_LIST_RES_KEY  0x1227
+#define MSGQ_LIST_SIZE_KEY 0x1228
+#define QUANTUM		       5
 
 struct job
 {
@@ -254,7 +254,7 @@ void exec()
 		}
 	}
 
-	// Wait for zoombies processes.
+	// Wait for child processes to be finished.
 	wait(&status);
 }
 
@@ -318,7 +318,7 @@ void listen()
 			}
 		}
 
-        ListReqMessage listReqMessage;
+		ListReqMessage listReqMessage;
 		if (msgrcv(mqidListReq, &listReqMessage, sizeof(listReqMessage) - sizeof(long), 0, IPC_NOWAIT) > -1) {
 
 			// Send first the size of the list.
@@ -332,10 +332,16 @@ void listen()
 
 			// Send each element of the list.
             if (queueDelayJobs.size() > 0) {
-				for (auto it = queueDelayJobs.begin(); it != queueDelayJobs.end(); it++) {
+				for (auto job : queueDelayJobs) {
+
 					ListResMessage listResMessage;
 					listResMessage.pid = getpid();
-					listResMessage.queueDelayJob = *it;
+					listResMessage.queueDelayJob.id = job.id;
+					listResMessage.queueDelayJob.copies = job.copies;
+					listResMessage.queueDelayJob.delay = job.delay;
+					listResMessage.queueDelayJob.priority = job.priority;
+					strcpy(listResMessage.queueDelayJob.name, job.name);
+					
 					if ((msgsnd(mqidListRes, &listResMessage, sizeof(listResMessage) - sizeof(long), 0)) < 0) {
 						cout << "Error while sending the message." << endl;
 						exit(1);
@@ -343,7 +349,6 @@ void listen()
                 }
 			}
 		}
-
 
 		// Verifica os prontos na fila e cria copias processos e manda (PID, JID, Contador, Orientacao) para o processo EXEC.
 		// Começa a executar o processo e imediatamente ele parado com SIGSTOP.
@@ -395,10 +400,5 @@ void listen()
 		for (auto& job : queueDelayJobs) {
 			job.delay--;
 		}
-	}
-
-	// Remove all message queue.
-	if (msgctl(int msqid, IPC_RMID, struct msqid_ds *buf) == -1) {
-		
 	}
 }

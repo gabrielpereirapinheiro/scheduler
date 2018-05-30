@@ -17,8 +17,8 @@
 using std::cout;
 using std::endl;
 
-#define SHM_KEY      0x1223
-#define MSGQ_ASK_KEY 0x1224
+#define SHM_KEY      0x1222
+#define MSGQ_ASK_KEY 0x1223
 
 struct job
 {

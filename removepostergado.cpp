@@ -13,7 +13,7 @@
 using std::cout;
 using std::endl;
 
-#define MSGQ_REM_KEY 0x1225
+#define MSGQ_REM_KEY 0x1224
 
 struct removeMessage
 {

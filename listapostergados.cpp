@@ -8,14 +8,15 @@
 #include <sys/types.h>
 #include <sys/ipc.h>
 #include <sys/msg.h>
+#include <ctime>
 #include <unistd.h>
 
 using std::cout;
 using std::endl;
 
-#define MSGQ_LIST_REQ_KEY 0x1227
-#define MSGQ_LIST_RES_KEY 0x1228
-#define MSGQ_LIST_SIZE_KEY 0x1229
+#define MSGQ_LIST_REQ_KEY  0x1226
+#define MSGQ_LIST_RES_KEY  0x1227
+#define MSGQ_LIST_SIZE_KEY 0x1228
 
 struct job
 {
@@ -82,6 +83,7 @@ int main(int argc, char *argv[])
 	int size = sizeMessage.size;
 	
 	// Show each delay job.
+	cout << size << endl;
 	if (size < 1) {
 		cout << endl << "List empty\n" << endl;
 	} else {
@@ -90,9 +92,15 @@ int main(int argc, char *argv[])
 		while (size-- > 0) {
 			ListResMessage resMessage;
 			msgrcv(mqidListRes, &resMessage, sizeof(resMessage) - sizeof(long), 0, 0);
+
+			auto now = time(nullptr);
+			auto local = localtime(&now);
+			int hours = local->tm_hour + resMessage.queueDelayJob.delay / 3600;
+			int minutes = local->tm_min + (resMessage.queueDelayJob.delay - 3600 * hours) / 60;
+
 			printf("%3d", resMessage.queueDelayJob.id);
 			printf("  %15s", resMessage.queueDelayJob.name);
-			printf("  %4d", resMessage.queueDelayJob.delay);
+			printf(" %.2d:%.2d", hours % 24, minutes % 60);
 			printf("  %6d", resMessage.queueDelayJob.copies);
 			printf("  %3d", resMessage.queueDelayJob.priority);
 			cout << endl;
