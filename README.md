@@ -8,6 +8,8 @@ This project is an implementation of a ***staggered process scheduling manager**
 
 The programming langugage used was `C++` so is necessary have the `g++` compiler installed in you computer. We've used C++11 on this project, so to compile each file, we use the flag `-std=c++11`.
 
+We used the version 5.4.0 of g++.
+
 ### Execute
 
 To compile the files of this project, inside the path of project `scheduler`, use the command:
