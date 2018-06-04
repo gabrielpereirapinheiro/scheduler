@@ -92,10 +92,10 @@ int main(int argc, char *argv[])
 			ListResMessage resMessage;
 			msgrcv(mqidListRes, &resMessage, sizeof(resMessage) - sizeof(long), 0, 0);
 
-			auto now = time(nullptr);
+			auto now = time(0);
 			auto local = localtime(&now);
-			int hours = local->tm_hour + resMessage.queueDelayJob.delay / 3600;
-			int minutes = local->tm_min + (resMessage.queueDelayJob.delay % 3600) / 60;
+			int minutes = local->tm_min + resMessage.queueDelayJob.delay / 60;
+			int hours = local->tm_hour + minutes / 60;
 
 			printf("%3d", resMessage.queueDelayJob.id);
 			printf("  %15s", resMessage.queueDelayJob.name);

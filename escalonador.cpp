@@ -263,7 +263,7 @@ void listen()
 	list<Job> queueDelayJobs;
 
 	int mqidAsk; // Remove existing queue.
-	if ((mqidAsk = msgget(MSGQ_ASK_KEY, 0x1B6)) < 0) {
+	if ((mqidAsk = msgget(MSGQ_ASK_KEY, 0x1B6)) == 0) {
 		if (msgctl(mqidAsk, IPC_RMID, nullptr) < 0) {
 			cout << "Error on message queue remotion!! This program will be closed." << endl;
 			exit(1);	
@@ -275,8 +275,8 @@ void listen()
 	}
 
 	int mqidRem;
-	if ((mqidRem = msgget(MSGQ_REM_KEY, 0x1B6)) < 0) {
-		if (msgctl(mqidRem, IPC_RMID, nullptr)) {
+	if ((mqidRem = msgget(MSGQ_REM_KEY, 0x1B6)) == 0) {
+		if (msgctl(mqidRem, IPC_RMID, nullptr) < 0) {
 			cout << "Error on message queue remotion!! This program will be closed." << endl;
 			exit(1);	
 		}
@@ -287,8 +287,8 @@ void listen()
 	}
 
 	int mqidReady;
-	if ((mqidReady = msgget(MSGQ_READY_KEY, IPC_CREAT|0x1B6)) < 0) {
-		if (msgctl(mqidReady, IPC_RMID, nullptr)) {
+	if ((mqidReady = msgget(MSGQ_READY_KEY, 0x1B6)) == 0) {
+		if (msgctl(mqidReady, IPC_RMID, nullptr) < 0) {
 			cout << "Error on message queue remotion!! This program will be closed." << endl;
 			exit(1);	
 		}
@@ -299,8 +299,8 @@ void listen()
 	}
 
 	int mqidListReq;
-	if ((mqidListReq = msgget(MSGQ_LIST_REQ_KEY, IPC_CREAT|0x1B6)) < 0) {
-		if (msgctl(mqidListReq, IPC_RMID, nullptr)) {
+	if ((mqidListReq = msgget(MSGQ_LIST_REQ_KEY, 0x1B6)) == 0) {
+		if (msgctl(mqidListReq, IPC_RMID, nullptr) < 0) {
 			cout << "Error on message queue remotion!! This program will be closed." << endl;
 			exit(1);	
 		}
@@ -311,10 +311,10 @@ void listen()
 	}
 
 	int mqidListRes;
-	if ((mqidListRes = msgget(MSGQ_LIST_RES_KEY, IPC_CREAT|0x1B6)) < 0) {
-		if (msgctl(mqidListRes, IPC_RMID, nullptr)) {
+	if ((mqidListRes = msgget(MSGQ_LIST_RES_KEY, 0x1B6)) == 0) {
+		if (msgctl(mqidListRes, IPC_RMID, nullptr) < 0) {
 			cout << "Error on message queue remotion!! This program will be closed." << endl;
-			exit(1);	
+			exit(1);
 		}
 	}
 	if ((mqidListRes = msgget(MSGQ_LIST_RES_KEY, IPC_CREAT|0x1B6)) < 0) {
@@ -323,8 +323,11 @@ void listen()
 	}
 
 	int mqidListSize;
-	if ((mqidListSize = msgget(MSGQ_LIST_SIZE_KEY, IPC_CREAT|0x1B6)) < 0) {
-		msgctl(mqidListSize, IPC_RMID, nullptr);
+	if ((mqidListSize = msgget(MSGQ_LIST_SIZE_KEY, 0x1B6)) == 0) {
+		if (msgctl(mqidListSize, IPC_RMID, nullptr) < 0) {
+			cout << "Error on message queue remotion!! This program will be closed." << endl;
+			exit(1);
+		};
 	}
 	if ((mqidListSize = msgget(MSGQ_LIST_SIZE_KEY, IPC_CREAT|0x1B6)) < 0) {
 		cout << "Error on message queue creation!! This program will be closed." << endl;
