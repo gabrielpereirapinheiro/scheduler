@@ -3,8 +3,10 @@ Project of operational systems (OS)
 
 ### About
 This project is an implementation of a ***staggered process scheduling manager*** and was build and can be can be build using `make` or using `gcc` on both files:
-- escalonador.c
-- solicitaexecucao
+- escalonador.cpp
+- solicitaexecucao.cpp
+- removepostergado.cpp
+- listaportergado.cpp
 
 The programming langugage used was `C++` so is necessary have the `g++` compiler installed in you computer. We've used C++11 on this project, so to compile each file, we use the flag `-std=c++11`.
 
@@ -37,7 +39,7 @@ Where:
 - `NAME` is the name of executable file, this file needs to be inside the project folder.
 
 
-To execute the `remove_postergado`, use the ocmmand:
+To execute the `remove_postergado`, use the command:
 ```
 $ ./remove_postergado <job_id>
 ```
