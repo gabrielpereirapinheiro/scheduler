@@ -1,5 +1,4 @@
 # Sheduler
-Project of operational systems (OS)
 
 ### About
 This project is an implementation of a ***staggered process scheduling manager*** and was build and can be can be build using `make` or using `g++` on both files:
